@@ -1,0 +1,24 @@
+{
+  "name": "staysmart-ai",
+  "version": "1.0.0",
+  "description": "Full-stack AI-powered Student Housing Platform - StaySmart AI",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "seed": "node backend/utils/seedData.js",
+    "server": "node backend/server.js",
+    "client": "npm --prefix frontend run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "student-housing",
+    "pg-finder",
+    "ai-housing",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "StaySmart AI Team",
+  "license": "MIT"
+}
