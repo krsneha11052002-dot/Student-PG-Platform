@@ -35,7 +35,12 @@ app.get('/api/health', (req, res) => {
 
 // Serve Static Frontend Assets in Production
 if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
-  const distPath = path.resolve(__dirname, '..', 'frontend', 'dist');
+  // In Docker: __dirname = /app, frontend/dist is at /app/frontend/dist
+  // In local dev: __dirname = /path/to/project/backend, dist is at ../frontend/dist
+  const dockerDistPath = path.resolve(__dirname, 'frontend', 'dist');
+  const localDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
+  const fs = require('fs');
+  const distPath = fs.existsSync(dockerDistPath) ? dockerDistPath : localDistPath;
   console.log(`📁 Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
