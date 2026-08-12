@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: student-pg-platform
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: node backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER
+        value: "true"
+    plan: free

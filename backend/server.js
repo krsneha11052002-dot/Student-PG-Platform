@@ -35,9 +35,17 @@ app.get('/api/health', (req, res) => {
 
 // Serve Static Frontend Assets in Production
 if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+  const distPath = path.resolve(__dirname, '..', 'frontend', 'dist');
+  console.log(`📁 Serving static files from: ${distPath}`);
+  app.use(express.static(distPath));
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`❌ Could not serve index.html:`, err.message);
+        res.status(500).json({ error: 'Frontend build not found. Run npm run build first.' });
+      }
+    });
   });
 } else {
   // 404 Route Handler for Dev
