@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useCollege } from '../context/CollegeContext';
+import { useAuth } from '../context/AuthContext';
 import { CreatePostModal } from '../components/CreatePostModal';
 import { AICommunityCard } from '../components/AICommunityCard';
 import {
