@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useCollege } from '../context/CollegeContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import {
   Users, Sparkles, Search, Filter, BookOpen, Coffee, Moon, Sun,
   Music, Dumbbell, Utensils, Wifi, MessageCircle, Heart, X, Star,
@@ -78,6 +79,8 @@ const LIFESTYLE_OPTIONS = [
 export const RoommatesPage = ({ setCurrentTab }) => {
   const { selectedCollege, changeCollege } = useCollege();
   const { user } = useAuth();
+  const { showSuccess } = useToast();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState('All');
   const [selectedTraits, setSelectedTraits] = useState([]);
@@ -85,10 +88,18 @@ export const RoommatesPage = ({ setCurrentTab }) => {
   const [likedIds, setLikedIds] = useState([]);
   const [messagedIds, setMessagedIds] = useState([]);
 
-  const roommates = useMemo(() => generateRoommates(selectedCollege), [selectedCollege]);
+  // Form states for adding a custom roommate profile
+  const [lookingFor, setLookingFor] = useState('2-Sharing Room');
+  const [budget, setBudget] = useState('');
+  const [bio, setBio] = useState('');
+  const [selectedFormTraits, setSelectedFormTraits] = useState([]);
+  const [customRoommates, setCustomRoommates] = useState([]);
+
+  const defaultRoommates = useMemo(() => generateRoommates(selectedCollege), [selectedCollege]);
+  const allRoommates = useMemo(() => [...customRoommates, ...defaultRoommates], [customRoommates, defaultRoommates]);
 
   const filtered = useMemo(() => {
-    return roommates.filter(r => {
+    return allRoommates.filter(r => {
       const matchesSearch = !searchQuery ||
         r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,7 +109,7 @@ export const RoommatesPage = ({ setCurrentTab }) => {
         selectedTraits.every(t => r.lifestyle.includes(t));
       return matchesSearch && matchesGender && matchesTraits;
     });
-  }, [roommates, searchQuery, genderFilter, selectedTraits]);
+  }, [allRoommates, searchQuery, genderFilter, selectedTraits]);
 
   const toggleTrait = (trait) => {
     setSelectedTraits(prev =>
@@ -286,10 +297,15 @@ export const RoommatesPage = ({ setCurrentTab }) => {
                       {rm.avatar}
                     </div>
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-bold text-slate-900 dark:text-white text-sm">{rm.name}</h3>
                         {rm.verified && (
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500/20" />
+                        )}
+                        {!rm.isReal && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.25 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                            Demo
+                          </span>
                         )}
                       </div>
                       <p className="text-[11px] text-slate-500">{rm.year} · {rm.department}</p>
@@ -380,7 +396,11 @@ export const RoommatesPage = ({ setCurrentTab }) => {
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">What are you looking for?</label>
-                  <select className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500">
+                  <select 
+                    value={lookingFor}
+                    onChange={(e) => setLookingFor(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  >
                     <option>Single Room</option>
                     <option>2-Sharing Room</option>
                     <option>3-Sharing Room</option>
@@ -389,16 +409,75 @@ export const RoommatesPage = ({ setCurrentTab }) => {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Budget Range</label>
-                  <input type="text" placeholder="e.g. ₹7,000 – ₹12,000/mo"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" />
+                  <input 
+                    type="text" 
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    placeholder="e.g. ₹7,000 – ₹12,000/mo"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" 
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Select Lifestyle Traits</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-slate-250 dark:border-slate-750 rounded-xl">
+                    {LIFESTYLE_OPTIONS.map(({ label }) => {
+                      const isSelected = selectedFormTraits.includes(label);
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setSelectedFormTraits(prev => isSelected ? prev.filter(t => t !== label) : [...prev, label])}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all ${
+                            isSelected
+                              ? 'bg-indigo-600 border-indigo-600 text-white'
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Brief Bio</label>
-                  <textarea rows={3} placeholder={`Tell potential roommates about yourself near ${selectedCollege?.area || 'campus'}...`}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 resize-none" />
+                  <textarea 
+                    rows={3} 
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder={`Tell potential roommates about yourself near ${selectedCollege?.area || 'campus'}...`}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 resize-none" 
+                  />
                 </div>
                 <button
-                  onClick={() => setShowPostForm(false)}
+                  onClick={() => {
+                    const newProfile = {
+                      id: `r-custom-${Date.now()}`,
+                      name: user.name || 'Anonymous Student',
+                      age: 20,
+                      gender: user.gender || 'Male',
+                      year: '1st Year',
+                      department: 'Student',
+                      college: selectedCollege?.shortName || 'Campus',
+                      area: selectedCollege?.area || 'Nearby',
+                      matchScore: 100,
+                      avatar: '🎓',
+                      lifestyle: selectedFormTraits.length > 0 ? selectedFormTraits : ['Non-Smoker', 'Quiet Study'],
+                      lookingFor,
+                      budget: budget || '₹8,000–₹12,000/mo',
+                      bio: bio || 'Looking for a clean and friendly roommate.',
+                      verified: true,
+                      posted: 'Just now',
+                      isReal: true
+                    };
+                    setCustomRoommates(prev => [newProfile, ...prev]);
+                    setShowPostForm(false);
+                    showSuccess('Your roommate profile has been posted successfully! 🎉');
+                    // Reset form fields
+                    setBio('');
+                    setBudget('');
+                    setSelectedFormTraits([]);
+                  }}
                   className="w-full py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-opacity"
                   style={{ background: collegeColor }}
                 >
