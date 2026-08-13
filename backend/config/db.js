@@ -4,8 +4,9 @@ let isConnectedToMongo = false;
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/staysmart_db', {
-      serverSelectionTimeoutMS: 2500 // Fast fail if Mongo isn't running locally
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/staysmart_db';
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000 // Allow up to 5s for Atlas to connect
     });
     isConnectedToMongo = true;
     console.log(`[MongoDB Connected]: ${conn.connection.host}`);
