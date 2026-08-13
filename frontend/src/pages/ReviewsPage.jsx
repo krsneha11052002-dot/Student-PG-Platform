@@ -345,11 +345,16 @@ export const ReviewsPage = ({ setCurrentTab }) => {
                     {review.avatar}
                   </div>
                   <div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-900 dark:text-white text-sm">{review.reviewer}</span>
                       {review.verified && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
                           <CheckCircle className="w-2.5 h-2.5" /> Verified Student
+                        </span>
+                      )}
+                      {!review.isReal && (
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                          Example Review
                         </span>
                       )}
                     </div>

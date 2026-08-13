@@ -13,6 +13,7 @@ export const RegisterPage = ({ setCurrentTab }) => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
   const [university, setUniversity] = useState(DELHI_COLLEGES[0].name);
+  const [customUniversity, setCustomUniversity] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -53,7 +54,8 @@ export const RegisterPage = ({ setCurrentTab }) => {
 
     setLoading(true);
     try {
-      const res = await register({ name, email, password, role, university });
+      const selectedUni = university === 'Other College (Not Listed)' ? customUniversity : university;
+      const res = await register({ name, email, password, role, university: selectedUni });
       if (res.success) {
         showSuccess(`Welcome aboard, ${name.split(' ')[0]}! 🎉 Account created.`);
         if (role === 'student') setCurrentTab('student-dashboard');
@@ -165,6 +167,18 @@ export const RegisterPage = ({ setCurrentTab }) => {
                   </option>
                 ))}
               </select>
+              {university === 'Other College (Not Listed)' && (
+                <div className="mt-2 animate-in slide-in-from-top-1 duration-200">
+                  <input
+                    type="text"
+                    value={customUniversity}
+                    onChange={(e) => setCustomUniversity(e.target.value)}
+                    placeholder="Enter your university/college name"
+                    className="w-full p-3 rounded-xl text-xs font-medium glass-input"
+                    required
+                  />
+                </div>
+              )}
             </div>
           )}
 

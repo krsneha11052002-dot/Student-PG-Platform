@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCollege } from '../context/CollegeContext';
 import {
   ShoppingBag, Plus, Search, Tag, Clock, MessageCircle, 
@@ -61,12 +61,15 @@ const getCollegeListings = (college) => {
 
 export const MarketplacePage = ({ setCurrentTab }) => {
   const { selectedCollege, changeCollege } = useCollege();
-  const [listings, setListings] = useState(getCollegeListings(selectedCollege));
+  const [customListings, setCustomListings] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSell, setShowSell] = useState(false);
   const [newItem, setNewItem] = useState({ title: '', price: '', category: 'books', condition: 'Good', description: '' });
   const [showDetail, setShowDetail] = useState(null);
+
+  const defaultListings = useMemo(() => getCollegeListings(selectedCollege), [selectedCollege]);
+  const listings = useMemo(() => [...customListings, ...defaultListings], [customListings, defaultListings]);
 
   const displayed = listings.filter(item => {
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -89,9 +92,10 @@ export const MarketplacePage = ({ setCurrentTab }) => {
       description: newItem.description,
       tags: [selectedCollege?.shortName || 'Campus'],
       image: null,
-      sold: false
+      sold: false,
+      isReal: true
     };
-    setListings([newListing, ...listings]);
+    setCustomListings([newListing, ...customListings]);
     setShowSell(false);
     setNewItem({ title: '', price: '', category: 'books', condition: 'Good', description: '' });
   };
@@ -273,13 +277,20 @@ export const MarketplacePage = ({ setCurrentTab }) => {
                   <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${catInfo.bg} ${catInfo.color} border border-current/20`}>
                     <CatIcon className="w-3 h-3" /> {catInfo.label}
                   </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    item.sold ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                    item.condition === 'Like New' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
-                    'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                  }`}>
-                    {item.sold ? 'SOLD' : item.condition}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {!item.isReal && (
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                        Example Product
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      item.sold ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                      item.condition === 'Like New' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                      'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                    }`}>
+                      {item.sold ? 'SOLD' : item.condition}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Title */}
