@@ -3,15 +3,22 @@
 # ─────────────────────────────────────────────
 FROM node:18-alpine AS frontend-builder
 
-WORKDIR /app/frontend
+WORKDIR /build
 
-# Copy frontend package files and install deps
-COPY frontend/package*.json ./
+# Copy frontend package files
+COPY frontend/package.json frontend/package-lock.json ./
+
+# Install dependencies
 RUN npm ci
 
-# Copy frontend source and build
+# Copy ALL frontend source files
 COPY frontend/ ./
+
+# Build the React app - outputs to /build/dist
 RUN npm run build
+
+# Verify build succeeded
+RUN ls -la /build/dist && echo "✅ Frontend build successful"
 
 # ─────────────────────────────────────────────
 # Stage 2: Production Backend Server
@@ -24,39 +31,37 @@ RUN apk add --no-cache dumb-init
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodeuser -u 1001
 
+# Set working directory for backend
 WORKDIR /app
 
-# Copy backend package files
-COPY backend/package*.json ./
-
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Copy backend package files and install production deps
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm ci --omit=dev || npm install --omit=dev
 
 # Copy backend source code
 COPY backend/ ./
 
-# Copy built frontend from Stage 1
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+# Copy built frontend dist into /app/public (simpler path)
+COPY --from=frontend-builder /build/dist ./public
 
-# Set ownership to non-root user
+# Verify everything is in place
+RUN ls -la /app/public && echo "✅ Static files ready at /app/public"
+
+# Set ownership
 RUN chown -R nodeuser:nodejs /app
 
-# Switch to non-root user
 USER nodeuser
 
-# Set environment variables
+# Environment
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV STATIC_DIR=/app/public
 
-# Expose port
 EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:5000/api/health || exit 1
 
-# Use dumb-init as PID 1 for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
-
-# Start the server
 CMD ["node", "server.js"]

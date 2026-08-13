@@ -35,23 +35,38 @@ app.get('/api/health', (req, res) => {
 
 // Serve Static Frontend Assets in Production
 if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
-  // In Docker: __dirname = /app, frontend/dist is at /app/frontend/dist
-  // In local dev: __dirname = /path/to/project/backend, dist is at ../frontend/dist
-  const dockerDistPath = path.resolve(__dirname, 'frontend', 'dist');
-  const localDistPath = path.resolve(__dirname, '..', 'frontend', 'dist');
   const fs = require('fs');
-  const distPath = fs.existsSync(dockerDistPath) ? dockerDistPath : localDistPath;
-  console.log(`📁 Serving static files from: ${distPath}`);
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => {
-    const indexPath = path.join(distPath, 'index.html');
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error(`❌ Could not serve index.html:`, err.message);
-        res.status(500).json({ error: 'Frontend build not found. Run npm run build first.' });
-      }
+
+  // Priority order for finding the built frontend:
+  // 1. STATIC_DIR env var (set in Docker via Dockerfile)
+  // 2. /app/public (Docker: copied to /app/public in Dockerfile)
+  // 3. __dirname/public (same as above, relative)
+  // 4. __dirname/../frontend/dist (local source-based deploy)
+  const candidates = [
+    process.env.STATIC_DIR,
+    '/app/public',
+    path.join(__dirname, 'public'),
+    path.join(__dirname, '..', 'frontend', 'dist'),
+    path.join(__dirname, 'frontend', 'dist'),
+  ].filter(Boolean);
+
+  const distPath = candidates.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+  if (!distPath) {
+    console.error('❌ Frontend build not found! Searched:', candidates);
+    console.error('   Run "npm run build" first, or check the Dockerfile COPY step.');
+  } else {
+    console.log(`📁 Serving static files from: ${distPath}`);
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'), (err) => {
+        if (err) {
+          console.error(`❌ Could not serve index.html:`, err.message);
+          res.status(500).json({ error: 'Frontend build not found.' });
+        }
+      });
     });
-  });
+  }
 } else {
   // 404 Route Handler for Dev
   app.use((req, res) => {
