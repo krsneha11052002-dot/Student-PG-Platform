@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import { DELHI_COLLEGES } from '../context/CollegeContext';
 import { UserPlus, Mail, Lock, User, GraduationCap, Building2, Eye, EyeOff, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export const RegisterPage = ({ setCurrentTab }) => {
@@ -11,7 +12,7 @@ export const RegisterPage = ({ setCurrentTab }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
-  const [university, setUniversity] = useState('BITS Pilani');
+  const [university, setUniversity] = useState(DELHI_COLLEGES[0].name);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -158,11 +159,11 @@ export const RegisterPage = ({ setCurrentTab }) => {
                 onChange={(e) => setUniversity(e.target.value)}
                 className="w-full p-3 rounded-xl text-xs font-bold glass-input cursor-pointer"
               >
-                <option value="BITS Pilani">BITS Pilani (Main Campus)</option>
-                <option value="IIT Delhi">IIT Delhi (Hauz Khas)</option>
-                <option value="VIT Vellore">VIT Vellore (Main Campus)</option>
-                <option value="Delhi University">Delhi University (North Campus)</option>
-                <option value="Pune University">Pune University (Ganeshkhind)</option>
+                {DELHI_COLLEGES.map((college) => (
+                  <option key={college.id} value={college.name}>
+                    {college.name} ({college.shortName})
+                  </option>
+                ))}
               </select>
             </div>
           )}
