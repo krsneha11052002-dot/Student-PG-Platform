@@ -174,6 +174,7 @@ const addReview = async (req, res) => {
     if (getMongoStatus()) {
       const review = await Review.create({
         pgId: id,
+        userId: String(req.user._id || req.user.id),
         userName: req.user.name,
         userRole,
         rating: Number(rating),
@@ -337,6 +338,45 @@ const getComplaints = async (req, res) => {
   }
 };
 
+// @desc    Get all reviews across all PGs
+// @route   GET /api/pgs/all-reviews
+const getAllReviews = async (req, res) => {
+  try {
+    if (getMongoStatus()) {
+      const Review = require('../models/Review');
+      const PG = require('../models/PG');
+      const reviews = await Review.find().sort({ createdAt: -1 });
+      
+      // Need to attach PG name to reviews
+      const pgs = await PG.find({}, '_id name');
+      const pgMap = pgs.reduce((acc, pg) => {
+        acc[String(pg._id)] = pg.name;
+        return acc;
+      }, {});
+
+      const reviewsWithPgName = reviews.map(r => ({
+        ...r.toObject(),
+        pgName: pgMap[r.pgId] || 'Unknown PG',
+        id: r._id,
+        reviewer: r.userName,
+        date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'Recent',
+        body: r.comment,
+        helpful: r.helpfulCount || 0,
+        tags: [],
+      }));
+
+      return res.json({ success: true, data: reviewsWithPgName });
+    }
+    
+    // In-Memory
+    const reviews = memoryStore.getAllReviews();
+    return res.json({ success: true, data: reviews });
+  } catch (err) {
+    console.error('Get all reviews error:', err);
+    res.status(500).json({ success: false, message: 'Server error retrieving reviews' });
+  }
+};
+
 // @desc    Mark review as helpful
 // @route   POST /api/pgs/:id/reviews/:reviewId/helpful
 const markHelpfulReview = async (req, res) => {
@@ -377,6 +417,7 @@ module.exports = {
   comparePGs,
   fileComplaint,
   getComplaints,
-  markHelpfulReview
+  markHelpfulReview,
+  getAllReviews
 };
 

@@ -1,131 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useCollege } from '../context/CollegeContext';
 import { useAuth } from '../context/AuthContext';
-import {
-  Star, MessageSquare, ThumbsUp, X, Filter, Search,
-  CheckCircle, Building2, MapPin, GraduationCap, RefreshCw,
-  ChevronDown, Sparkles, TrendingUp, PenSquare, Camera
-} from 'lucide-react';
+import { useToast } from '../components/Toast';
+import { Star, MapPin, Search, RefreshCw, TrendingUp, Sparkles, PenSquare, CheckCircle, Building2, ThumbsUp, MessageSquare, X, GraduationCap, Loader2, Pencil, Trash2 } from 'lucide-react';
 
-// Mock reviews data per college
-const generateReviews = (college) => {
-  const area = college?.area || 'Delhi';
-  const name = college?.shortName || 'Campus';
-
-  return [
-    {
-      id: 'rev1',
-      pgName: `Sunrise PG ${area}`,
-      pgId: 'pg1',
-      reviewer: 'Tanvi M.',
-      avatar: '👩‍🎓',
-      college: name,
-      year: '3rd Year · CS',
-      rating: 5,
-      date: '3 days ago',
-      title: 'Best PG near campus — clean, safe & great food!',
-      body: `Lived here for 1 year. Just 8 mins walk from ${name}. The meals are amazing — rajma rice is 🔥. The owner is super responsive and the internet is actually fast. Highly recommend for girls!`,
-      helpful: 24,
-      tags: ['Clean Rooms', 'Great Food', 'Fast Wi-Fi', 'Safe for Girls'],
-      verified: true,
-      categories: { cleanliness: 5, food: 5, safety: 5, wifi: 4, value: 4 }
-    },
-    {
-      id: 'rev2',
-      pgName: `Elite Boys PG, ${area}`,
-      pgId: 'pg2',
-      reviewer: 'Arjun K.',
-      avatar: '👨‍💻',
-      college: name,
-      year: '2nd Year · EE',
-      rating: 4,
-      date: '1 week ago',
-      title: 'Good value, minor issues with AC in summer',
-      body: `Overall a decent PG. Located 12 mins from ${name} by metro. Food is passable — wish they had more non-veg options. The AC in my room broke in May and took 4 days to fix. But for the price, still good.`,
-      helpful: 11,
-      tags: ['Good Location', 'Value for Money'],
-      verified: true,
-      categories: { cleanliness: 4, food: 3, safety: 4, wifi: 4, value: 5 }
-    },
-    {
-      id: 'rev3',
-      pgName: `Student Zone Hostel, ${area}`,
-      pgId: 'pg3',
-      reviewer: 'Nandini R.',
-      avatar: '📚',
-      college: name,
-      year: '1st Year · History',
-      rating: 3,
-      date: '2 weeks ago',
-      title: 'Average experience — management could improve',
-      body: `For freshers looking for cheap accommodation near ${name}, it's okay. Rooms are clean but small. The main issue is water supply cuts after 8 AM which is really annoying. Wi-Fi only works near the common area.`,
-      helpful: 8,
-      tags: ['Budget-Friendly', 'Close to College'],
-      verified: false,
-      categories: { cleanliness: 3, food: 3, safety: 4, wifi: 2, value: 4 }
-    },
-    {
-      id: 'rev4',
-      pgName: `The Scholar Suites, ${area}`,
-      pgId: 'pg4',
-      reviewer: 'Rohan S.',
-      avatar: '🧑‍🎓',
-      college: name,
-      year: 'M.Tech 1st Year · CS',
-      rating: 5,
-      date: '3 weeks ago',
-      title: 'Premium PG — totally worth the price for postgrads',
-      body: `Moved here for M.Tech. The rooms are spacious with attached bath. Study lounge open 24/7. Very close to ${name} research labs. A bit pricey but you get AC, laundry, and superfast Wi-Fi. Would choose it again.`,
-      helpful: 31,
-      tags: ['Spacious Rooms', 'Study Lounge', '24/7 Wi-Fi', 'Attached Bath'],
-      verified: true,
-      categories: { cleanliness: 5, food: 4, safety: 5, wifi: 5, value: 4 }
-    },
-    {
-      id: 'rev5',
-      pgName: `Green Park Residency, ${area}`,
-      pgId: 'pg5',
-      reviewer: 'Meera P.',
-      avatar: '🌸',
-      college: name,
-      year: '4th Year · Architecture',
-      rating: 2,
-      date: '1 month ago',
-      title: 'Water issues and noisy neighbourhood — be warned',
-      body: `Don't be fooled by the photos. The place has persistent water supply issues and the neighborhood gets very noisy at night near ${area}. Management is unresponsive. Had to move out after 2 months. Not recommended.`,
-      helpful: 19,
-      tags: ['Water Issues', 'Noisy'],
-      verified: true,
-      categories: { cleanliness: 2, food: 3, safety: 3, wifi: 3, value: 2 }
-    },
-    {
-      id: 'rev6',
-      pgName: `Campus View PG, ${area}`,
-      pgId: 'pg6',
-      reviewer: 'Dev T.',
-      avatar: '👨‍🏫',
-      college: name,
-      year: '3rd Year · Commerce',
-      rating: 4,
-      date: '1 month ago',
-      title: 'Solid mid-range option close to metro',
-      body: `Been here for 8 months. Located just 5 mins from ${name} metro station. Good security with biometric entry. Internet is okay but not great. Food is decent — thali style lunches and dinners. Overall good deal.`,
-      helpful: 14,
-      tags: ['Metro Nearby', 'Good Security', 'Biometric Entry'],
-      verified: true,
-      categories: { cleanliness: 4, food: 4, safety: 5, wifi: 3, value: 4 }
-    },
-  ];
-};
-
-const StarRating = ({ value, size = 'sm' }) => {
-  const sizes = { sm: 'w-3.5 h-3.5', md: 'w-5 h-5', lg: 'w-6 h-6' };
+const StarRating = ({ value, size = "sm" }) => {
+  const sizes = { sm: "w-3 h-3", md: "w-5 h-5", lg: "w-7 h-7" };
+  const s = sizes[size];
   return (
     <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map(s => (
+      {[1, 2, 3, 4, 5].map(star => (
         <Star
-          key={s}
-          className={`${sizes[size]} ${s <= value ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+          key={star}
+          className={`${s} ${star <= value ? 'fill-amber-400 text-amber-400' : 'fill-slate-100 text-slate-200 dark:fill-slate-800 dark:text-slate-700'}`}
         />
       ))}
     </div>
@@ -134,7 +21,7 @@ const StarRating = ({ value, size = 'sm' }) => {
 
 const CategoryBar = ({ label, value }) => (
   <div className="flex items-center gap-2 text-xs">
-    <span className="w-20 text-slate-500 shrink-0">{label}</span>
+    <span className="w-24 text-slate-500 shrink-0">{label}</span>
     <div className="flex-1 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700">
       <div
         className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all"
@@ -145,48 +32,177 @@ const CategoryBar = ({ label, value }) => (
   </div>
 );
 
+const EXAMPLE_REVIEW = {
+  _id: 'example_review1',
+  id: 'example_review1',
+  isExample: true,
+  pgName: 'Example PG',
+  reviewer: 'Example Student',
+  verified: true,
+  year: '3rd Year',
+  college: 'Example College',
+  rating: 4,
+  title: 'Great place, but food can improve',
+  body: 'This is an EXAMPLE REVIEW to show you what a real review looks like. Read real reviews or write your own to help other students!',
+  date: 'Just now',
+  helpful: 12,
+  tags: ['Example'],
+  categories: { cleanliness: 5, food: 3, safety: 5, wifi: 4, value: 4 },
+  avatar: '👩‍🎓'
+};
+
 export const ReviewsPage = ({ setCurrentTab }) => {
   const { selectedCollege, changeCollege } = useCollege();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const { showSuccess, showError } = useToast();
+
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [ratingFilter, setRatingFilter] = useState(0);
   const [sortBy, setSortBy] = useState('recent');
   const [helpfulIds, setHelpfulIds] = useState([]);
+  
+  // Write/Edit Form State
   const [showWriteForm, setShowWriteForm] = useState(false);
+  const [editReview, setEditReview] = useState(null);
   const [newReviewRating, setNewReviewRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [pgName, setPgName] = useState('');
+  const [pgId, setPgId] = useState('');
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [categories, setCategories] = useState({ cleanliness: 0, food: 0, safety: 0, wifi: 0, value: 0 });
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
-  const reviews = useMemo(() => generateReviews(selectedCollege), [selectedCollege]);
+  const fetchReviews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/pgs/all-reviews');
+      const data = await res.json();
+      if (data.success) {
+        setReviews(data.data || []);
+      }
+    } catch (err) {
+      console.error('Fetch reviews error:', err);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  const allReviews = useMemo(() => [...reviews, EXAMPLE_REVIEW], [reviews]);
 
   const filtered = useMemo(() => {
-    let result = reviews.filter(r => {
+    let result = allReviews.filter(r => {
       const matchesSearch = !searchQuery ||
-        r.pgName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.body.toLowerCase().includes(searchQuery.toLowerCase());
+        (r.pgName && r.pgName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (r.title && r.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (r.body && r.body.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesRating = ratingFilter === 0 || r.rating === ratingFilter;
       return matchesSearch && matchesRating;
     });
 
-    if (sortBy === 'helpful') result = [...result].sort((a, b) => b.helpful - a.helpful);
+    if (sortBy === 'helpful') result = [...result].sort((a, b) => (b.helpful || 0) - (a.helpful || 0));
     else if (sortBy === 'highest') result = [...result].sort((a, b) => b.rating - a.rating);
     else if (sortBy === 'lowest') result = [...result].sort((a, b) => a.rating - b.rating);
 
     return result;
-  }, [reviews, searchQuery, ratingFilter, sortBy]);
+  }, [allReviews, searchQuery, ratingFilter, sortBy]);
 
-  const avgRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
+  const avgRating = allReviews.length ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1) : "0.0";
   const ratingDist = [5, 4, 3, 2, 1].map(n => ({
     star: n,
-    count: reviews.filter(r => r.rating === n).length,
-    pct: Math.round((reviews.filter(r => r.rating === n).length / reviews.length) * 100)
+    count: allReviews.filter(r => r.rating === n).length,
+    pct: allReviews.length ? Math.round((allReviews.filter(r => r.rating === n).length / allReviews.length) * 100) : 0
   }));
 
   const collegeColor = selectedCollege?.color || '#4f46e5';
+  const myId = user ? String(user.id || user._id) : null;
+
+  const handleEditOpen = (review) => {
+    setEditReview(review);
+    setPgName(review.pgName || '');
+    setPgId(review.pgId || '');
+    setNewReviewRating(review.rating || 0);
+    setTitle(review.title || '');
+    setBody(review.body || review.comment || '');
+    setCategories(review.categories || { cleanliness: 0, food: 0, safety: 0, wifi: 0, value: 0 });
+    setShowWriteForm(true);
+  };
+
+  const handleDelete = async (review) => {
+    if (!window.confirm('Delete this review? This cannot be undone.')) return;
+    setDeletingId(review._id || review.id);
+    try {
+      const res = await fetch(`/api/pgs/reviews/${review._id || review.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        showSuccess('Review deleted.');
+        fetchReviews();
+      } else {
+        showError(data.message || 'Failed to delete review');
+      }
+    } catch (e) {
+      showError('Network error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!newReviewRating) { showError('Please provide an overall rating'); return; }
+    if (!body) { showError('Please write a review comment'); return; }
+    setSubmitting(true);
+
+    try {
+      if (editReview) {
+        // Edit existing review
+        const res = await fetch(`/api/pgs/reviews/${editReview._id || editReview.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ rating: newReviewRating, title, comment: body, categories })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showSuccess('Review updated! ✅');
+          setShowWriteForm(false);
+          fetchReviews();
+        } else {
+          showError(data.message || 'Failed to update review');
+        }
+      } else {
+        // Create new review (requires PG selection, simulating with a generic request since PG dropdown isn't fully implemented in this generic view, but we can pass a dummy pgId if none selected)
+        const finalPgId = pgId || 'generic_pg_123';
+        const res = await fetch(`/api/pgs/${finalPgId}/reviews`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ rating: newReviewRating, title, comment: body, categories, isVerified: true })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showSuccess('Review submitted! 🌟');
+          setShowWriteForm(false);
+          fetchReviews();
+        } else {
+          showError(data.message || 'Failed to submit review');
+        }
+      }
+    } catch (e) {
+      showError('Network error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-16">
-
       {/* Page Header */}
       <div
         className="p-8 rounded-3xl text-white relative overflow-hidden shadow-xl"
@@ -201,9 +217,7 @@ export const ReviewsPage = ({ setCurrentTab }) => {
               </div>
             )}
             <h1 className="text-3xl font-extrabold">
-              {selectedCollege
-                ? `PG Reviews near ${selectedCollege.shortName}`
-                : 'Verified PG Reviews'} ⭐
+              {selectedCollege ? `PG Reviews near ${selectedCollege.shortName}` : 'Verified PG Reviews'} ⭐
             </h1>
             <p className="text-xs text-slate-300 max-w-lg">
               {selectedCollege
@@ -213,36 +227,36 @@ export const ReviewsPage = ({ setCurrentTab }) => {
           </div>
           <div className="flex flex-col gap-2 shrink-0">
             <button
-              onClick={() => setShowWriteForm(true)}
+              onClick={() => {
+                setEditReview(null); setPgName(''); setPgId(''); setTitle(''); setBody('');
+                setNewReviewRating(0); setCategories({ cleanliness: 0, food: 0, safety: 0, wifi: 0, value: 0 });
+                setShowWriteForm(true);
+              }}
               className="px-5 py-2.5 rounded-2xl bg-white font-bold text-xs shadow-lg hover:bg-slate-100 transition-colors flex items-center gap-2"
               style={{ color: collegeColor }}
             >
               <PenSquare className="w-4 h-4" /> Write a Review
             </button>
-            {selectedCollege && (
-              <button onClick={changeCollege}
-                className="px-4 py-2 rounded-xl bg-white/15 text-white/90 font-semibold text-xs border border-white/20 hover:bg-white/25 transition-colors flex items-center gap-1.5">
-                <RefreshCw className="w-3.5 h-3.5" /> Change College
-              </button>
-            )}
+            <button onClick={fetchReviews}
+              className="px-4 py-2 rounded-xl bg-white/15 text-white/90 font-semibold text-xs border border-white/20 hover:bg-white/25 transition-colors flex items-center gap-1.5">
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh
+            </button>
           </div>
         </div>
       </div>
 
       {/* Stats + Rating Distribution */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Overall Score */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center justify-center text-center shadow-sm">
           <div className="text-6xl font-black text-slate-900 dark:text-white">{avgRating}</div>
-          <StarRating value={Math.round(avgRating)} size="md" />
-          <p className="text-xs text-slate-500 mt-2">{reviews.length} verified reviews</p>
+          <StarRating value={Math.round(parseFloat(avgRating))} size="md" />
+          <p className="text-xs text-slate-500 mt-2">{reviews.length} real reviews</p>
           <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
             <MapPin className="w-3 h-3 text-indigo-400" />
-            near {selectedCollege?.area || 'Delhi'}
+            near {selectedCollege?.area || 'Campus'}
           </p>
         </div>
 
-        {/* Rating Distribution */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-2.5 shadow-sm">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4 text-indigo-500" /> Rating Breakdown
@@ -265,13 +279,12 @@ export const ReviewsPage = ({ setCurrentTab }) => {
           ))}
         </div>
 
-        {/* Category Averages */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-3 shadow-sm">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-indigo-500" /> Category Averages
           </h3>
           {['cleanliness', 'food', 'safety', 'wifi', 'value'].map(cat => {
-            const avg = (reviews.reduce((s, r) => s + (r.categories[cat] || 0), 0) / reviews.length).toFixed(1);
+            const avg = allReviews.length ? (allReviews.reduce((s, r) => s + (r.categories?.[cat] || 0), 0) / allReviews.length).toFixed(1) : "0.0";
             return (
               <CategoryBar key={cat} label={cat.charAt(0).toUpperCase() + cat.slice(1)} value={parseFloat(avg)} />
             );
@@ -303,9 +316,7 @@ export const ReviewsPage = ({ setCurrentTab }) => {
               key={val}
               onClick={() => setSortBy(val)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all ${
-                sortBy === val
-                  ? 'text-white border-transparent'
-                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                sortBy === val ? 'text-white border-transparent' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
               }`}
               style={sortBy === val ? { background: collegeColor } : {}}
             >
@@ -324,7 +335,9 @@ export const ReviewsPage = ({ setCurrentTab }) => {
 
       {/* Review Cards */}
       <div className="space-y-5">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>
+        ) : filtered.length === 0 ? (
           <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
             <Star className="w-12 h-12 text-slate-300 mx-auto" />
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">No Reviews Found</h3>
@@ -334,34 +347,42 @@ export const ReviewsPage = ({ setCurrentTab }) => {
             </button>
           </div>
         ) : filtered.map((review) => {
-          const helpful = helpfulIds.includes(review.id);
+          const helpful = helpfulIds.includes(review.id || review._id);
+          const isOwner = myId && String(review.userId) === myId;
+          const isDeleting = deletingId === (review.id || review._id);
+
           return (
-            <div key={review.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 hover:shadow-md transition-shadow">
+            <div key={review.id || review._id}
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 hover:shadow-md transition-shadow group">
               {/* Review Header */}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl shrink-0">
-                    {review.avatar}
+                    {review.avatar || '🎓'}
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">{review.reviewer}</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{review.reviewer || review.userName}</span>
                       {review.verified && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
                           <CheckCircle className="w-2.5 h-2.5" /> Verified Student
                         </span>
                       )}
-                      {!review.isReal && (
+                      {review.isExample && (
                         <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                          Example Review
+                          EXAMPLE REVIEW
+                        </span>
+                      )}
+                      {isOwner && !review.isExample && (
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 shrink-0">
+                          Your Review
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500">{review.year} · {review.college}</p>
+                    <p className="text-[11px] text-slate-500">{(review.year || '')} {review.college ? `· ${review.college}` : ''}</p>
                     <div className="flex items-center gap-1 mt-0.5">
                       <Building2 className="w-3 h-3 text-indigo-400" />
-                      <span className="text-[10px] font-semibold text-indigo-500">{review.pgName}</span>
+                      <span className="text-[10px] font-semibold text-indigo-500">{review.pgName || 'General PG'}</span>
                     </div>
                   </div>
                 </div>
@@ -378,7 +399,7 @@ export const ReviewsPage = ({ setCurrentTab }) => {
               </div>
 
               {/* Tags */}
-              {review.tags.length > 0 && (
+              {review.tags && review.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {review.tags.map(tag => (
                     <span key={tag}
@@ -390,129 +411,123 @@ export const ReviewsPage = ({ setCurrentTab }) => {
               )}
 
               {/* Category Breakdown */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                {Object.entries(review.categories).map(([cat, val]) => (
-                  <div key={cat} className="text-center">
-                    <div className="text-sm font-extrabold" style={{ color: val >= 4 ? '#10b981' : val >= 3 ? '#f59e0b' : '#ef4444' }}>
-                      {val}/5
+              {review.categories && (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  {Object.entries(review.categories).map(([cat, val]) => (
+                    <div key={cat} className="text-center">
+                      <div className="text-sm font-extrabold" style={{ color: val >= 4 ? '#10b981' : val >= 3 ? '#f59e0b' : '#ef4444' }}>
+                        {val}/5
+                      </div>
+                      <div className="text-[9px] text-slate-400 capitalize">{cat}</div>
                     </div>
-                    <div className="text-[9px] text-slate-400 capitalize">{cat}</div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
-              {/* Helpful Button */}
-              <div className="flex items-center justify-between pt-1">
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800 mt-2 pt-3">
                 <button
-                  onClick={() => setHelpfulIds(prev =>
-                    prev.includes(review.id) ? prev.filter(i => i !== review.id) : [...prev, review.id]
-                  )}
+                  onClick={() => setHelpfulIds(prev => prev.includes(review.id || review._id) ? prev.filter(i => i !== (review.id || review._id)) : [...prev, review.id || review._id])}
                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all ${
-                    helpful
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 hover:text-indigo-500'
+                    helpful ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700' : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 hover:text-indigo-500'
                   }`}
                 >
                   <ThumbsUp className={`w-3.5 h-3.5 ${helpful ? 'fill-indigo-500' : ''}`} />
-                  Helpful · {review.helpful + (helpful ? 1 : 0)}
+                  Helpful · {(review.helpful || 0) + (helpful ? 1 : 0)}
                 </button>
-                <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
-                  <MessageSquare className="w-3.5 h-3.5" /> Reply
-                </button>
+                <div className="flex gap-2">
+                  {isOwner && !review.isExample && (
+                    <>
+                      <button onClick={() => handleEditOpen(review)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-indigo-600 transition-colors">
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button onClick={() => handleDelete(review)} disabled={isDeleting} className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition-colors disabled:opacity-50">
+                        {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Delete
+                      </button>
+                    </>
+                  )}
+                  {!isOwner && (
+                    <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                      <MessageSquare className="w-3.5 h-3.5" /> Reply
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Write Review Modal */}
+      {/* Write/Edit Review Modal */}
       {showWriteForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <PenSquare className="w-5 h-5 text-indigo-500" /> Write a PG Review
+                <PenSquare className="w-5 h-5 text-indigo-500" /> {editReview ? 'Edit Review' : 'Write a PG Review'}
               </h2>
-              <button onClick={() => setShowWriteForm(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
+              <button onClick={() => setShowWriteForm(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {user ? (
               <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">PG Name</label>
-                  <input type="text" placeholder={`e.g. Sunrise PG, ${selectedCollege?.area || 'Delhi'}`}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" />
-                </div>
+                {!editReview && (
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">PG ID (Temporary for generic reviews)</label>
+                    <input type="text" value={pgId} onChange={e => setPgId(e.target.value)} placeholder="Enter a PG ID or leave blank for generic"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" />
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">Overall Rating</label>
                   <div className="flex items-center gap-2">
                     {[1, 2, 3, 4, 5].map(s => (
-                      <button
-                        key={s}
-                        onMouseEnter={() => setHoverRating(s)}
-                        onMouseLeave={() => setHoverRating(0)}
-                        onClick={() => setNewReviewRating(s)}
-                        className="focus:outline-none"
-                      >
-                        <Star className={`w-7 h-7 transition-colors ${
-                          s <= (hoverRating || newReviewRating)
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-300 dark:text-slate-600'
-                        }`} />
+                      <button key={s} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} onClick={() => setNewReviewRating(s)} className="focus:outline-none">
+                        <Star className={`w-7 h-7 transition-colors ${s <= (hoverRating || newReviewRating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`} />
                       </button>
                     ))}
-                    {newReviewRating > 0 && (
-                      <span className="text-sm font-bold text-amber-500 ml-1">
-                        {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][newReviewRating]}
-                      </span>
-                    )}
+                    {newReviewRating > 0 && <span className="text-sm font-bold text-amber-500 ml-1">{['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][newReviewRating]}</span>}
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Review Title</label>
-                  <input type="text" placeholder="Summarize your experience..."
+                  <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Summarize your experience..."
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Detailed Review</label>
-                  <textarea rows={4}
-                    placeholder={`Share your experience — food, cleanliness, internet, safety near ${selectedCollege?.area || 'campus'}...`}
+                  <textarea rows={4} value={body} onChange={e => setBody(e.target.value)} placeholder={`Share your experience...`}
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 resize-none" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {['Cleanliness', 'Food Quality', 'Safety', 'Wi-Fi Speed', 'Value for Money'].map(cat => (
+                  {['cleanliness', 'food', 'safety', 'wifi', 'value'].map(cat => (
                     <div key={cat}>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">{cat}</label>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1 capitalize">{cat}</label>
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map(s => (
-                          <Star key={s} className="w-4 h-4 text-slate-300 hover:fill-amber-400 hover:text-amber-400 cursor-pointer transition-colors" />
+                          <Star key={s} onClick={() => setCategories(p => ({ ...p, [cat]: s }))}
+                            className={`w-4 h-4 cursor-pointer transition-colors ${s <= categories[cat] ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
                         ))}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <button
-                  onClick={() => setShowWriteForm(false)}
-                  className="w-full py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-opacity"
-                  style={{ background: collegeColor }}
-                >
-                  🌟 Submit Review
+                <button onClick={handleSubmit} disabled={submitting} className="w-full py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 transition-opacity flex items-center justify-center gap-2" style={{ background: collegeColor }}>
+                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : editReview ? '✅ Update Review' : '🌟 Submit Review'}
                 </button>
               </div>
             ) : (
               <div className="text-center space-y-3 py-4">
                 <GraduationCap className="w-12 h-12 text-slate-400 mx-auto" />
                 <p className="text-sm text-slate-600 dark:text-slate-400">Log in as a Verified Student to submit PG reviews.</p>
-                <button onClick={() => { setShowWriteForm(false); setCurrentTab('login'); }}
-                  className="px-6 py-2 rounded-xl text-white text-xs font-bold" style={{ background: collegeColor }}>
+                <button onClick={() => { setShowWriteForm(false); setCurrentTab('login'); }} className="px-6 py-2 rounded-xl text-white text-xs font-bold" style={{ background: collegeColor }}>
                   Login / Register
                 </button>
               </div>

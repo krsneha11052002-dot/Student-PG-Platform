@@ -22,6 +22,9 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/community', require('./routes/communityRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/roommates', require('./routes/roommateRoutes'));
+app.use('/api/marketplace', require('./routes/marketplaceRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

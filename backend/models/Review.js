@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const ReviewSchema = new mongoose.Schema({
   pgId: { type: String, required: true },
+  userId: { type: String, default: '' },
   userName: { type: String, required: true },
   userRole: { type: String, default: 'Verified Student' },
   rating: { type: Number, required: true, min: 1, max: 5 },
