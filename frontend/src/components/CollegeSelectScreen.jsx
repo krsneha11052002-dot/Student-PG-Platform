@@ -11,6 +11,7 @@ export const CollegeSelectScreen = ({ onComplete }) => {
   const [hoveredId, setHoveredId] = useState(null);
   const [step, setStep] = useState('choose'); // 'choose' | 'confirm'
   const [pendingCollege, setPendingCollege] = useState(null);
+  const [customName, setCustomName] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -31,8 +32,17 @@ export const CollegeSelectScreen = ({ onComplete }) => {
   };
 
   const handleConfirm = () => {
-    chooseCollege(pendingCollege);
-    if (onComplete) onComplete(pendingCollege);
+    let finalCollege = { ...pendingCollege };
+    if (pendingCollege.id === 'other') {
+      if (!customName.trim()) {
+        alert("Please enter your college name");
+        return;
+      }
+      finalCollege.name = customName.trim();
+      finalCollege.shortName = customName.trim().split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 8) || 'Custom';
+    }
+    chooseCollege(finalCollege);
+    if (onComplete) onComplete(finalCollege);
   };
 
   const typeColors = {
@@ -68,6 +78,22 @@ export const CollegeSelectScreen = ({ onComplete }) => {
                 <MapPin className="w-3.5 h-3.5" /> {pendingCollege.area}, {pendingCollege.zone}
               </p>
             </div>
+
+            {pendingCollege.id === 'other' && (
+              <div className="space-y-1.5 text-left max-w-sm mx-auto">
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                  Enter Your College/University Name:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. Christ University / SRM Chennai"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs font-semibold shadow-sm"
+                />
+              </div>
+            )}
 
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 space-y-2 text-left">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
