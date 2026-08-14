@@ -26,6 +26,7 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
 
   const [aiDetecting, setAiDetecting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emergencyIssue, setEmergencyIssue] = useState('Security / Theft Alert');
 
   useEffect(() => {
     if (editingPost) {
@@ -40,6 +41,20 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
         setPrice(editingPost.marketplace.price || '');
         setCondition(editingPost.marketplace.condition || 'Like New');
         setWhatsapp(editingPost.marketplace.contactWhatsApp || '');
+      }
+      if (editingPost.eventDetails) {
+        setEventDate(editingPost.eventDetails.eventDate || '');
+        setEventVenue(editingPost.eventDetails.eventVenue || editingPost.eventDetails.venue || '');
+        setEventOrganizer(editingPost.eventDetails.eventOrganizer || editingPost.eventDetails.organizer || '');
+      }
+      if (editingPost.lostFound) {
+        setLostFoundStatus(editingPost.lostFound.status || 'LOST');
+        setLostLocation(editingPost.lostFound.location || '');
+        setContactPhone(editingPost.lostFound.contactPhone || '');
+      }
+      if (editingPost.emergencyDetails) {
+        setEmergencyIssue(editingPost.emergencyDetails.safetyType || 'Security / Theft Alert');
+        setContactPhone(editingPost.emergencyDetails.contactPhone || '');
       }
     }
   }, [editingPost]);

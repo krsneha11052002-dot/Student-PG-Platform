@@ -760,7 +760,32 @@ export const CommunityPage = ({ setCurrentTab }) => {
                     <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {ev.venue}</span>
                   </div>
 
-                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white">{post.title}</h3>
+                  <div className="flex items-start justify-between gap-4">
+                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white">{post.title}</h3>
+                    {user && String(post.authorId) === String(user._id || user.id) && (
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => { setEditingPost(post); setShowCreateModal(true); }}
+                          className="text-slate-400 hover:text-indigo-600 transition-colors p-1 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                          title="Edit Event"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePost(post._id || post.id)}
+                          disabled={isDeleting === (post._id || post.id)}
+                          className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/30 disabled:opacity-50"
+                          title="Delete Event"
+                        >
+                          {isDeleting === (post._id || post.id) ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 leading-relaxed">{post.content}</p>
 
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">

@@ -128,7 +128,7 @@ const updateCommunityPost = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to edit this post' });
     }
 
-    const { title, content, imageUrl, category, subCategory, tags } = req.body;
+    const { title, content, imageUrl, category, subCategory, tags, eventDetails, marketplace, lostFound, emergencyDetails } = req.body;
     
     post.title = title || post.title;
     post.content = content || post.content;
@@ -136,6 +136,11 @@ const updateCommunityPost = async (req, res) => {
     post.category = category || post.category;
     post.subCategory = subCategory || post.subCategory;
     post.tags = tags || post.tags;
+
+    if (eventDetails) post.eventDetails = { ...post.eventDetails, ...eventDetails };
+    if (marketplace) post.marketplace = { ...post.marketplace, ...marketplace };
+    if (lostFound) post.lostFound = { ...post.lostFound, ...lostFound };
+    if (emergencyDetails) post.emergencyDetails = { ...post.emergencyDetails, ...emergencyDetails };
 
     await post.save();
     res.json({ success: true, post });
