@@ -382,6 +382,7 @@ export const CommunityPage = ({ setCurrentTab }) => {
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 2 hours ago</span>
                           </div>
                         </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         {user && String(post.authorId) === String(user._id || user.id) && (
                           <div className="flex gap-2 mr-2">
