@@ -27,6 +27,24 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
   const [aiDetecting, setAiDetecting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emergencyIssue, setEmergencyIssue] = useState('Security / Theft Alert');
+  
+  const [imageSourceType, setImageSourceType] = useState('file');
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert("File is too large. Max size is 8MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (editingPost) {
@@ -36,6 +54,10 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
       setContent(editingPost.content || '');
       setImageUrl(editingPost.imageUrl || '');
       setTagsInput(editingPost.tags?.join(', ') || '');
+      
+      if (editingPost.imageUrl) {
+        setImageSourceType(editingPost.imageUrl.startsWith('data:image') ? 'file' : 'url');
+      }
       
       if (editingPost.marketplace) {
         setPrice(editingPost.marketplace.price || '');
@@ -265,18 +287,77 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
             />
           </div>
 
-          {/* Photo URL */}
+          {/* Photo Input (Gallery Upload or URL) */}
           <div>
-            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 mb-1">
-              <Image className="w-3.5 h-3.5 text-indigo-500" /> Photo URL (Optional)
+            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1">
+              <span className="flex items-center gap-1">
+                <Image className="w-3.5 h-3.5 text-indigo-500" /> Photo (Optional)
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold">Upload file or paste URL</span>
             </label>
-            <input
-              type="url"
-              value={imageUrl}
-              onChange={e => setImageUrl(e.target.value)}
-              placeholder="https://images.unsplash.com/... or image link"
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
-            />
+            
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImageSourceType('file')}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                    imageSourceType === 'file'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500'
+                  }`}
+                >
+                  📁 Select from Gallery
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageSourceType('url')}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                    imageSourceType === 'url'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500'
+                  }`}
+                >
+                  🔗 Paste Web Link
+                </button>
+              </div>
+
+              {imageSourceType === 'file' ? (
+                <div className="flex items-center gap-3">
+                  <label className="flex-1 flex flex-col items-center justify-center p-3 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Choose Image File</span>
+                    <span className="text-[9px] text-slate-400">Max size 8MB</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                  
+                  {imageUrl && imageUrl.startsWith('data:image') && (
+                    <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0">
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl('')}
+                        className="absolute top-0 right-0 p-0.5 bg-black/60 text-white hover:bg-black/80 rounded-bl-lg"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <input
+                  type="url"
+                  value={imageUrl && !imageUrl.startsWith('data:image') ? imageUrl : ''}
+                  onChange={e => setImageUrl(e.target.value)}
+                  placeholder="https://images.unsplash.com/... or web link"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                />
+              )}
+            </div>
           </div>
 
           {/* Category-Specific Form Inputs */}
