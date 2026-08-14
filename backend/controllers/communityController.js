@@ -51,9 +51,10 @@ const createCommunityPost = async (req, res) => {
       id: 'cpost_' + Date.now(),
       collegeId: collegeId || collegeShortName.toLowerCase().replace(/\s+/g, '-'),
       collegeShortName,
-      authorName: authorName || 'Anonymous Student',
+      authorName: req.user?.name || authorName || 'Anonymous Student',
       authorAvatar: '🎓',
       authorBadge: authorBadge || 'Verified Student',
+      authorId: String(req.user._id),
       category: category || 'feed',
       subCategory: subCategory || 'General',
       title,
@@ -111,6 +112,57 @@ const toggleLikePost = async (req, res) => {
     res.json({ success: true, likesCount: result.likesCount, liked: result.liked });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error toggling post like' });
+  }
+};
+
+// @desc    Update Community Post
+// @route   PUT /api/community/posts/:id
+const updateCommunityPost = async (req, res) => {
+  try {
+    const post = await CommunityPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    if (String(post.authorId) !== String(req.user._id)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to edit this post' });
+    }
+
+    const { title, content, imageUrl, category, subCategory, tags } = req.body;
+    
+    post.title = title || post.title;
+    post.content = content || post.content;
+    post.imageUrl = imageUrl !== undefined ? imageUrl : post.imageUrl;
+    post.category = category || post.category;
+    post.subCategory = subCategory || post.subCategory;
+    post.tags = tags || post.tags;
+
+    await post.save();
+    res.json({ success: true, post });
+  } catch (error) {
+    console.error('Update post error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update post' });
+  }
+};
+
+// @desc    Delete Community Post
+// @route   DELETE /api/community/posts/:id
+const deleteCommunityPost = async (req, res) => {
+  try {
+    const post = await CommunityPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    if (String(post.authorId) !== String(req.user._id)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this post' });
+    }
+
+    await post.deleteOne();
+    res.json({ success: true, message: 'Post removed' });
+  } catch (error) {
+    console.error('Delete post error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete post' });
   }
 };
 
@@ -225,5 +277,7 @@ module.exports = {
   toggleLikePost,
   addComment,
   getLocalServices,
-  triggerEmergencyAlert
+  triggerEmergencyAlert,
+  updateCommunityPost,
+  deleteCommunityPost
 };

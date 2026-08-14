@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Image, Tag, DollarSign, MapPin, Calendar, AlertTriangle, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { X, Sparkles, Image, Tag, DollarSign, MapPin, Calendar, AlertTriangle, Send, Loader2 } from 'lucide-react';
 
-export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreated }) => {
+export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreated, editingPost }) => {
+  const { token } = useAuth();
   const [category, setCategory] = useState('feed');
   const [subCategory, setSubCategory] = useState('Academics');
   const [title, setTitle] = useState('');
@@ -23,6 +25,24 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
   const [eventOrganizer, setEventOrganizer] = useState('');
 
   const [aiDetecting, setAiDetecting] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (editingPost) {
+      setCategory(editingPost.category || 'feed');
+      setSubCategory(editingPost.subCategory || 'Academics');
+      setTitle(editingPost.title || '');
+      setContent(editingPost.content || '');
+      setImageUrl(editingPost.imageUrl || '');
+      setTagsInput(editingPost.tags?.join(', ') || '');
+      
+      if (editingPost.marketplace) {
+        setPrice(editingPost.marketplace.price || '');
+        setCondition(editingPost.marketplace.condition || 'Like New');
+        setWhatsapp(editingPost.marketplace.contactWhatsApp || '');
+      }
+    }
+  }, [editingPost]);
 
   const handleAutoCategory = async () => {
     if (!title && !content) return;
@@ -49,6 +69,10 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
+    if (!token) {
+      alert("Please login to post");
+      return;
+    }
 
     setLoading(true);
     const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
@@ -93,9 +117,15 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
     }
 
     try {
-      const res = await fetch('/api/community/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const url = editingPost ? `/api/community/posts/${editingPost._id || editingPost.id}` : '/api/community/posts';
+      const method = editingPost ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(postPayload)
       });
       const data = await res.json();
@@ -124,7 +154,7 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Create Community Post
+                {editingPost ? 'Edit Community Post' : 'Create Community Post'}
               </h2>
               <p className="text-[10px] text-indigo-500 font-semibold uppercase tracking-wider">
                 {collegeShortName} Verified Campus
@@ -389,24 +419,22 @@ export const CreatePostModal = ({ isOpen, onClose, collegeShortName, onPostCreat
             />
           </div>
 
-          {/* Submit Button */}
-          <div className="pt-2 flex justify-end gap-2">
+          {/* Submit Action */}
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 font-semibold"
+              className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className={`px-5 py-2 rounded-xl text-white font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-500/25 ${
-                category === 'emergency' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
+              className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-lg disabled:opacity-50"
             >
-              <Send className="w-3.5 h-3.5" />
-              <span>{loading ? 'Posting...' : 'Publish to Campus Community'}</span>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {editingPost ? 'Update Post' : 'Publish Post'}
             </button>
           </div>
 

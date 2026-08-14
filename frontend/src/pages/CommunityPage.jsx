@@ -8,12 +8,12 @@ import {
   GraduationCap, RefreshCw, AlertTriangle, ShoppingBag, HelpCircle,
   Wrench, Calendar, PhoneCall, Shield, CheckCircle, Image as ImageIcon,
   MapPin, Clock, ExternalLink, Send, Sparkles, MessageCircle, ChevronRight,
-  Flame, BookOpen, AlertCircle
+  Flame, BookOpen, AlertCircle, Trash2, Pencil, Loader2
 } from 'lucide-react';
 
 export const CommunityPage = ({ setCurrentTab }) => {
   const { selectedCollege, changeCollege } = useCollege();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const collegeName = selectedCollege?.name || 'Delhi University Campus';
   const collegeShort = selectedCollege?.shortName || 'Campus';
@@ -28,6 +28,8 @@ export const CommunityPage = ({ setCurrentTab }) => {
   const [searchQuery, setSearchQuery] = useState('');
   
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(null);
   const [commentInputs, setCommentInputs] = useState({});
   const [openCommentsId, setOpenCommentsId] = useState(null);
 
@@ -70,7 +72,7 @@ export const CommunityPage = ({ setCurrentTab }) => {
       const res = await fetch(`/api/community/posts/${postId}/like`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?._id || 'guest_user' })
+        body: JSON.stringify({ userId: user?._id || user?.id || 'guest_user' })
       });
       const data = await res.json();
       if (data.success) {
@@ -83,6 +85,27 @@ export const CommunityPage = ({ setCurrentTab }) => {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Delete this post? This cannot be undone.')) return;
+    setIsDeleting(postId);
+    try {
+      const res = await fetch(`/api/community/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPosts(prev => prev.filter(p => (p._id || p.id) !== postId));
+      } else {
+        alert(data.message || 'Failed to delete post');
+      }
+    } catch (err) {
+      console.error('Delete post error:', err);
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -202,7 +225,7 @@ export const CommunityPage = ({ setCurrentTab }) => {
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => { setEditingPost(null); setShowCreateModal(true); }}
                 className="px-5 py-2.5 rounded-2xl bg-white text-slate-900 font-extrabold text-xs shadow-lg hover:bg-slate-100 transition-all flex items-center gap-2"
               >
                 <Plus className="w-4 h-4 text-indigo-600" /> Create Campus Post
@@ -359,13 +382,32 @@ export const CommunityPage = ({ setCurrentTab }) => {
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 2 hours ago</span>
                           </div>
                         </div>
+                      <div className="flex items-center gap-2">
+                        {user && String(post.authorId) === String(user._id || user.id) && (
+                          <div className="flex gap-2 mr-2">
+                            <button
+                              onClick={() => { setEditingPost(post); setShowCreateModal(true); }}
+                              className="text-slate-400 hover:text-indigo-600 transition-colors p-1 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                              title="Edit Post"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(postId)}
+                              disabled={isDeleting === postId}
+                              className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/30 disabled:opacity-50"
+                              title="Delete Post"
+                            >
+                              {isDeleting === postId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        )}
+                        {post.subCategory && post.subCategory !== 'General' && (
+                          <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-900">
+                            {post.subCategory}
+                          </span>
+                        )}
                       </div>
-
-                      {post.subCategory && post.subCategory !== 'General' && (
-                        <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-200 dark:border-indigo-900">
-                          {post.subCategory}
-                        </span>
-                      )}
                     </div>
 
                     {/* Content */}
@@ -803,11 +845,17 @@ export const CommunityPage = ({ setCurrentTab }) => {
       {/* CREATE POST MODAL */}
       <CreatePostModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => { setShowCreateModal(false); setEditingPost(null); }}
         collegeShortName={collegeShort}
-        onPostCreated={() => fetchCommunityData()}
+        editingPost={editingPost}
+        onPostCreated={(newPost) => {
+          if (editingPost) {
+            setPosts(prev => prev.map(p => (p.id || p._id) === (newPost.id || newPost._id) ? newPost : p));
+          } else {
+            setPosts(prev => [newPost, ...prev]);
+          }
+        }}
       />
-
       {/* SOS EMERGENCY MODAL */}
       {showSOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
